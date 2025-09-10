@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DAP - Drivers Assistance Platform Design System
+   Apple-inspired Minimalist Design with Pastel Aqua-Glass Aesthetic
+   All colors MUST be HSL for proper theming
+*/
+
+@layer base {
+  :root {
+    /* Core Background Colors - Soft Whites & Light Grays */
+    --background: 220 16% 98%;
+    --foreground: 220 12% 15%;
+    
+    /* Card Colors - Pure White with Subtle Glass */
+    --card: 0 0% 100%;
+    --card-foreground: 220 12% 15%;
+    
+    /* Popover Colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 12% 15%;
+    
+    /* Primary - Deeper Blue for Better Contrast */
+    --primary: 213 94% 55%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Light Gray with Better Contrast */
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 12% 25%;
+    
+    /* Muted Tones - Better Contrast */
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 45%;
+    
+    /* Accent - Deeper Aqua for Readability */
+    --accent: 199 89% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Destructive - Better Contrast */
+    --destructive: 352 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders and Inputs - Subtle but Visible */
+    --border: 220 13% 88%;
+    --input: 0 0% 100%;
+    --ring: 213 94% 55%;
+    
+    /* Aqua Glass Morphism Colors */
+    --glass-light: 199 89% 90% / 0.05;
+    --glass-medium: 199 89% 85% / 0.12;
+    --glass-dark: 220 8% 20% / 0.02;
+    --glass-border: 199 89% 90% / 0.08;
+    
+    /* Gradients - Soft Pastels */
+    --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 55%), hsl(199, 89%, 55%));
+    --gradient-glass: linear-gradient(135deg, 
+      hsla(199, 89%, 95%, 0.12), 
+      hsla(213, 94%, 95%, 0.04));
+    --gradient-subtle: linear-gradient(180deg, hsl(220, 16%, 99%), hsl(220, 14%, 97%));
+    
+    /* Shadows - Ultra Subtle */
+    --shadow-simple: 0 1px 2px hsla(220, 12%, 15%, 0.04);
+    --shadow-medium: 0 2px 8px hsla(220, 12%, 15%, 0.06);
+    --shadow-glow: 0 0 20px hsla(213, 94%, 55%, 0.15);
+    --shadow-glass: 0 4px 24px hsla(220, 12%, 15%, 0.04);
+    --shadow-floating: 0 8px 32px hsla(220, 12%, 15%, 0.08);
+    
+    /* Minimal Animations */
+    --transition-smooth: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-fast: all 0.1s ease-out;
+    --radius: 1rem;
+
+    /* Sidebar - Soft Pastels */
+    --sidebar-background: 220 16% 99%;
+    --sidebar-foreground: 220 12% 25%;
+    --sidebar-primary: 213 94% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 97%;
+    --sidebar-accent-foreground: 220 12% 30%;
+    --sidebar-border: 220 13% 94%;
+    --sidebar-ring: 213 94% 55%;
+  }
+
+  /* Dark mode variant - Soft Dark Pastels */
+  .dark {
+    --background: 220 8% 8%;
+    --foreground: 220 14% 95%;
+    --card: 220 8% 12%;
+    --card-foreground: 220 14% 95%;
+    --popover: 220 8% 12%;
+    --popover-foreground: 220 14% 95%;
+    --primary: 213 94% 78%;
+    --primary-foreground: 220 8% 8%;
+    --secondary: 220 8% 15%;
+    --secondary-foreground: 220 14% 85%;
+    --muted: 220 8% 14%;
+    --muted-foreground: 220 8% 65%;
+    --border: 220 8% 18%;
+    --input: 220 8% 14%;
+    --ring: 213 94% 78%;
+    
+    /* Dark Aqua Glass Morphism */
+    --glass-light: 213 94% 50% / 0.03;
+    --glass-medium: 199 89% 50% / 0.08;
+    --glass-dark: 220 8% 95% / 0.02;
+    --glass-border: 213 94% 78% / 0.05;
+    
+    /* Dark Gradients */
+    --gradient-glass: linear-gradient(135deg, 
+      hsla(213, 94%, 20%, 0.08), 
+      hsla(199, 89%, 20%, 0.02));
+    --shadow-glass: 0 4px 24px hsla(220, 8%, 0%, 0.2);
+    --shadow-floating: 0 8px 32px hsla(220, 8%, 0%, 0.4);
+    
+    /* Dark Sidebar */
+    --sidebar-background: 220 8% 10%;
+    --sidebar-foreground: 220 14% 85%;
+    --sidebar-primary: 213 94% 78%;
+    --sidebar-primary-foreground: 220 8% 8%;
+    --sidebar-accent: 220 8% 16%;
+    --sidebar-accent-foreground: 220 14% 85%;
+    --sidebar-border: 220 8% 20%;
+    --sidebar-ring: 213 94% 78%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-['Inter'] antialiased;
+    min-height: 100vh;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Optimized Glass Morphism System */
+  .glass {
+    background: var(--gradient-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: none;
+    box-shadow: var(--shadow-glass);
+  }
+  
+  .glass-card {
+    @apply glass rounded-3xl p-6 sm:p-8;
+    @apply hover:shadow-floating hover:scale-[1.01];
+    transition: var(--transition-smooth);
+  }
+  
+  .glass-button {
+    @apply glass rounded-2xl px-6 sm:px-8 py-3 sm:py-4 font-medium;
+    @apply hover:shadow-glow hover:scale-[1.02] active:scale-[0.98];
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20;
+    transition: var(--transition-smooth);
+  }
+  
+  .nav-link {
+    @apply rounded-2xl px-6 py-3 text-sm font-medium;
+    @apply hover:bg-glass-medium hover:text-primary;
+    @apply hover:backdrop-blur-sm;
+    transition: var(--transition-smooth);
+    border: none;
+  }
+  
+  /* Responsive Grid System */
+  .responsive-grid {
+    @apply grid gap-6 sm:gap-8 md:gap-10;
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .responsive-container {
+    @apply container mx-auto px-6 sm:px-8 lg:px-12;
+  }
+  
+  /* Minimal Animations - Apple Style */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .scroll-fade {
+    @apply fade-in;
+  }
+  
+  /* Mobile-First Responsive Typography */
+  .hero-title {
+    @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl;
+    @apply font-light leading-tight tracking-tight;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .section-title {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+    @apply font-medium leading-tight;
+  }
+  
+  .section-subtitle {
+    @apply text-lg sm:text-xl md:text-2xl;
+    @apply text-muted-foreground leading-relaxed font-light;
+  }
+  
+  /* Interactive Elements - Borderless */
+  .interactive-card {
+    @apply glass-card cursor-pointer;
+    @apply hover:shadow-floating;
+    transition: var(--transition-smooth);
+    border: none;
+  }
+  
+  /* Pastel Accent Utilities */
+  .text-accent {
+    color: hsl(var(--accent));
+  }
+  
+  .bg-accent {
+    background-color: hsl(var(--accent));
+  }
+  
+  .text-primary-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* Legacy Support - Consolidated with Primary */
+  .text-orange,
+  .bg-orange,
+  .border-orange,
+  .gradient-text-orange {
+    color: hsl(var(--accent));
+  }
+  
+  .bg-orange {
+    background-color: hsl(var(--accent));
+  }
+  
+  .border-orange {
+    border-color: hsl(var(--accent));
+  }
+  
+  .gradient-text-orange {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
