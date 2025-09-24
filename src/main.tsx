@@ -5,8 +5,8 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { LanguageProvider } from '@/components/language-provider'
 
 createRoot(document.getElementById("root")!).render(
-  <LanguageProvider defaultLanguage="ro" storageKey="dap-ui-language">
-    <ThemeProvider defaultTheme="light" storageKey="dap-ui-theme">
+  <LanguageProvider defaultLanguage="en" storageKey="dap-ui-language">
+    <ThemeProvider defaultTheme="dark" storageKey="dap-ui-theme">
       <App />
     </ThemeProvider>
   </LanguageProvider>
