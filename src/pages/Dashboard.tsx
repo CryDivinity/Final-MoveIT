@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, AlertTriangle, Phone, User as UserIcon, LogOut, Home, QrCode, Wrench } from 'lucide-react';
+import { 
+  MapPin, AlertTriangle, Phone, User as UserIcon, 
+  LogOut, Home, QrCode, Wrench, Shield 
+} from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 import ReportModal from '@/components/ReportModal';
 import QRCodeModal from '@/components/QRCodeModal';
@@ -21,11 +23,13 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageToggle } from '@/components/language-toggle';
 import { useLanguage } from '@/components/language-provider';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import DashboardCard from '@/components/DashboardCard'; // new reusable card
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showQRCodeModal, setShowQRCodeModal] = useState(false);
@@ -42,36 +46,24 @@ const Dashboard = () => {
   useEffect(() => {
     let mounted = true;
     
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
-        
-        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Only redirect to auth if we're sure there's no session and loading is complete
-        if (!session?.user && !isLoading) {
-          console.log('No session, redirecting to auth');
-          navigate('/auth');
-        }
+        if (!session?.user && !isLoading) navigate('/auth');
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      
-      console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
-      
       if (!session?.user) {
-        console.log('No initial session, redirecting to auth');
         navigate('/auth');
       } else {
         fetchProfile(session.user.id);
+        fetchUserRole(session.user.id);
       }
       setIsLoading(false);
     });
@@ -84,43 +76,40 @@ const Dashboard = () => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
       setProfile(data);
-      
-      // If profile exists but is incomplete, redirect to profile completion
-      if (data && !data.is_profile_complete) {
-        navigate('/profile');
-      }
+      if (data && !data.is_profile_complete) navigate('/profile');
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error(error);
     }
   };
 
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      setUserRole(data?.role || 'user');
+    } catch (error) {
+      setUserRole('user');
+    }
+  };
+
+  const isAdmin = userRole === 'admin';
+
   const handleSignOut = async () => {
     try {
-      // Use robust sign out to handle corrupted sessions
       const { robustSignOut } = await import('@/lib/auth-utils');
       await robustSignOut(supabase);
     } catch (error) {
-      // Fallback: clean up and redirect manually
-      console.error('Sign out error:', error);
-      try {
-        const { cleanupAuthState } = await import('@/lib/auth-utils');
-        cleanupAuthState();
-      } catch (cleanupError) {
-        console.warn('Cleanup error:', cleanupError);
-      }
-      // Force redirect as last resort
+      const { cleanupAuthState } = await import('@/lib/auth-utils');
+      cleanupAuthState();
       window.location.href = '/auth';
     }
   };
@@ -133,142 +122,39 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="glass border-b border-border/20 sticky top-0 z-40">
         <div className="responsive-container py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg sm:text-xl font-semibold text-foreground">{t('dashboard.title')}</h1>
-            
-            {/* Center - Language and Theme Toggles */}
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+            <h1 className="text-lg sm:text-xl font-semibold text-foreground text-center sm:text-left w-full sm:w-auto">
+              {t('dashboard.title')}
+            </h1>
+            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
               <LanguageToggle />
               <ThemeToggle />
             </div>
-            
-            {/* Right - Navigation and User Actions */}
-            <div className="flex items-center space-x-2">
-              {/* Profile Button - Desktop */}
+            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+              {isAdmin && (
+                <Button variant="ghost" onClick={() => navigate('/admin')} className="glass-button text-sm">
+                  <Shield className="h-4 w-4 mr-2" />
+                  {t('nav.admin')}
+                </Button>
+              )}
               <div className="hidden lg:block">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowProfileModal(true)}
-                  className="glass-button text-sm"
-                >
-                  <UserIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{t('nav.profile')}</span>
+                <Button variant="ghost" onClick={() => setShowProfileModal(true)} className="glass-button text-sm">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  {t('nav.profile')}
                 </Button>
               </div>
-              
-              {/* Sign Out Button - Desktop */}
               <div className="hidden lg:block">
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="glass-button text-sm"
-                >
-                  <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{t('nav.signOut')}</span>
+                <Button variant="ghost" onClick={handleSignOut} className="glass-button text-sm">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {t('nav.signOut')}
                 </Button>
-              </div>
-              
-              {/* Navigation Menu */}
-              <div className="relative group">
-                <Button
-                  variant="ghost"
-                  className="glass-button text-sm"
-                >
-                  <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                  <span className="truncate">{t('nav.menu')}</span>
-                </Button>
-                
-                {/* Dropdown Menu */}
-                <div className="absolute right-0 top-full mt-2 w-48 bg-background/95 backdrop-blur-lg border border-border/20 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="p-2 space-y-1">
-                    {/* Profile and Sign Out for Mobile */}
-                    <div className="lg:hidden">
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowProfileModal(true)}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <UserIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.profile')}</span>
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        onClick={handleSignOut}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.signOut')}</span>
-                      </Button>
-                      
-                      <div className="h-px bg-border/20 my-2"></div>
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      onClick={() => navigate('/')}
-                      className="w-full justify-start glass-button text-sm"
-                    >
-                      <Home className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">{t('nav.home')}</span>
-                    </Button>
-                    
-                    {isFeatureVisible('report') && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowReportModal(true)}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.report')}</span>
-                      </Button>
-                    )}
-                    
-                    {isFeatureVisible('emergency') && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowEmergencyModal(true)}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.emergency')}</span>
-                      </Button>
-                    )}
-                    
-                    {isFeatureVisible('navigation') && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowNavigationModal(true)}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.navigation')}</span>
-                      </Button>
-                    )}
-                    
-                    {isFeatureVisible('qr_code') && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowQRCodeModal(true)}
-                        className="w-full justify-start glass-button text-sm"
-                      >
-                        <QrCode className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{t('nav.qrCode')}</span>
-                      </Button>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -276,171 +162,104 @@ const Dashboard = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="responsive-container py-6 sm:py-8">
-        {/* User Status Section */}
+      <div className="responsive-container py-4 sm:py-6 md:py-10">
+        {/* User Status */}
         <div className="mb-6 sm:mb-8">
-          <UserStatusManager 
-            user={user}
-            profile={profile}
-          />
+          <UserStatusManager user={user} profile={profile} />
         </div>
 
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">
+        {/* Welcome */}
+        <div className="mb-8 sm:mb-10">
+          <h2 className="text-lg sm:text-2xl font-bold mb-2 text-foreground">
             {t('dashboard.welcome')}, {profile?.first_name || user.email?.split('@')[0]}
           </h2>
-          <p className="text-muted-foreground">
-            {t('dashboard.subtitle')}
-          </p>
+          <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
 
         {/* Action Cards */}
-        <div className="responsive-grid max-w-6xl mx-auto">
-          {/* Report Problem Card */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {isFeatureVisible('reports') && (
-            <div 
-              className="interactive-card group"
+            <DashboardCard
+              icon={<AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange" />}
+              title={t('cards.reportProblem.title')}
+              description={t('cards.reportProblem.description')}
+              colorClass="orange"
               onClick={() => setShowReportModal(true)}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-orange/10 rounded-full flex items-center justify-center group-hover:bg-orange/20 transition-colors">
-                  <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.reportProblem.title')}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {t('cards.reportProblem.description')}
-                </p>
-              </div>
-            </div>
+            />
           )}
-
-          {/* Emergency Card */}
           {isFeatureVisible('emergency') && (
-            <div 
-              className="interactive-card group"
+            <DashboardCard
+              icon={<Phone className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />}
+              title={t('cards.emergency.title')}
+              description={t('cards.emergency.description')}
+              colorClass="destructive"
               onClick={() => setShowEmergencyModal(true)}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
-                  <Phone className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.emergency.title')}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {t('cards.emergency.description')}
-                </p>
-              </div>
-            </div>
+            />
           )}
-
-          {/* Navigation Card */}
           {isFeatureVisible('navigation') && (
-            <div 
-              className="interactive-card group"
+            <DashboardCard
+              icon={<MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />}
+              title={t('cards.navigation.title')}
+              description={t('cards.navigation.description')}
+              colorClass="foreground"
               onClick={() => setShowNavigationModal(true)}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-foreground/10 rounded-full flex items-center justify-center group-hover:bg-foreground/20 transition-colors">
-                  <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-foreground" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.navigation.title')}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {t('cards.navigation.description')}
-                </p>
-              </div>
-            </div>
+            />
           )}
-
-          {/* Service Card */}
-          <div 
-            className="interactive-card group"
+          <DashboardCard
+            icon={<Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-orange" />}
+            title={t('cards.service.title')}
+            description={t('cards.service.description')}
+            colorClass="orange"
             onClick={() => setShowServiceModal(true)}
-          >
-            <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-orange/10 rounded-full flex items-center justify-center group-hover:bg-orange/20 transition-colors">
-                <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-orange" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.service.title')}</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                {t('cards.service.description')}
-              </p>
-            </div>
-          </div>
-
-          {/* Penalties Card */}
+          />
           {isFeatureVisible('penalties') && (
-            <div 
-              className="interactive-card group"
+            <DashboardCard
+              icon={<AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />}
+              title={t('cards.penalties.title')}
+              description={t('cards.penalties.description')}
+              colorClass="destructive"
               onClick={() => setShowPenaltyModal(true)}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
-                  <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.penalties.title')}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {t('cards.penalties.description')}
-                </p>
-              </div>
-            </div>
+            />
           )}
-
-          {/* Community Card */}
           {isFeatureVisible('community') && user && <CommunityCard user={user} />}
-
-          {/* Friends Tab - only shows if user has accepted friends */}
           {isFeatureVisible('friends') && user && <FriendsTab user={user} />}
-
-          {/* QR Code Card */}
           {isFeatureVisible('qr_system') && (
-            <div 
-              className="interactive-card group"
+            <DashboardCard
+              icon={<QrCode className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />}
+              title={t('cards.qrCode.title')}
+              description={t('cards.qrCode.description')}
+              colorClass="primary"
               onClick={() => setShowQRCodeModal(true)}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <QrCode className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">{t('cards.qrCode.title')}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {t('cards.qrCode.description')}
-                </p>
-              </div>
-            </div>
+            />
           )}
         </div>
 
-        {/* Mobile Navigation Grid */}
+        {/* Mobile Nav */}
         <div className="lg:hidden mt-8 grid grid-cols-2 gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="glass-button justify-start h-auto py-4"
-          >
+          <Button variant="ghost" onClick={() => navigate('/')} className="glass-button justify-start h-auto py-4">
             <Home className="h-5 w-5 mr-3" />
-            <span>{t('nav.home')}</span>
+            {t('nav.home')}
           </Button>
-          
-          <Button
-            variant="ghost"
-            onClick={() => setShowProfileModal(true)}
-            className="glass-button justify-start h-auto py-4"
-          >
-            <UserIcon className="h-5 w-5 mr-3 flex-shrink-0" />
-            <span className="truncate">{t('mobile.myProfile')}</span>
+          <Button variant="ghost" onClick={() => setShowProfileModal(true)} className="glass-button justify-start h-auto py-4">
+            <UserIcon className="h-5 w-5 mr-3" />
+            {t('mobile.myProfile')}
           </Button>
-          
-          <Button
-            variant="ghost"
-            onClick={() => setShowReportModal(true)}
-            className="glass-button justify-start h-auto py-4"
-          >
-            <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0" />
-            <span className="truncate">{t('mobile.quickReport')}</span>
+          <Button variant="ghost" onClick={() => setShowReportModal(true)} className="glass-button justify-start h-auto py-4">
+            <AlertTriangle className="h-5 w-5 mr-3" />
+            {t('mobile.quickReport')}
           </Button>
+          {isAdmin && (
+            <Button variant="ghost" onClick={() => navigate('/admin')} className="glass-button justify-start h-auto py-4">
+              <Shield className="h-5 w-5 mr-3" />
+              {t('nav.admin')}
+            </Button>
+          )}
         </div>
 
-        {/* Notifications Section */}
-        {user && <NotificationCenter userId={user.id} />}
+        {/* Notifications */}
+        <div className="mt-10 sm:mt-12">
+          {user && <NotificationCenter userId={user.id} />}
+        </div>
       </div>
 
       {/* Modals */}

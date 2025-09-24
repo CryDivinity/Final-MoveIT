@@ -84,7 +84,7 @@ const Navigation = () => {
             {user ? (
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-muted-foreground hidden lg:block">
-                  Welcome, {user.email?.split('@')[0]}
+                  {t('nav.welcome')} {user.email?.split('@')[0]}
                 </span>
                 <Button 
                   variant="ghost" 

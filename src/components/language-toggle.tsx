@@ -13,7 +13,6 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'ro', label: 'Română', flag: '🇷🇴' },
   { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'md', label: 'Moldova', flag: '🇲🇩' },
 ];
 
 export function LanguageToggle() {
@@ -40,9 +39,7 @@ export function LanguageToggle() {
               ? 'english'
               : lang.code === 'ro'
               ? 'romanian'
-              : lang.code === 'ru'
-              ? 'russian'
-              : 'moldova'}`)}
+              : 'russian'}`)}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

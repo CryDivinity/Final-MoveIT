@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, AlertTriangle, Clock, Star } from 'lucide-react';
+import { Bell, AlertTriangle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/components/language-provider';
+import { cn } from '@/lib/utils';
 
 interface Report {
   id: string;
@@ -26,13 +27,16 @@ interface NotificationCenterProps {
   userId: string;
 }
 
-const reportTypeLabels: Record<string, { label: string; color: string }> = {
-  wrong_park: { label: 'Wrong Parking', color: 'secondary' },
-  car_problem: { label: 'Car Problem', color: 'muted' },
-  forgotten_lights: { label: 'Forgotten Lights', color: 'accent' },
-  natural_weather: { label: 'Weather Issue', color: 'secondary' },
-  suspect_person: { label: 'Suspicious Activity', color: 'destructive' },
-  evacuation_report: { label: 'Emergency Evacuation', color: 'primary' }
+const reportTypeLabels: Record<
+  string,
+  { label: string; color: string; icon: React.ElementType }
+> = {
+  wrong_park: { label: 'Wrong Parking', color: 'orange', icon: AlertTriangle },
+  car_problem: { label: 'Car Problem', color: 'blue', icon: Bell },
+  forgotten_lights: { label: 'Forgotten Lights', color: 'yellow', icon: Bell },
+  natural_weather: { label: 'Weather Issue', color: 'sky', icon: Bell },
+  suspect_person: { label: 'Suspicious Activity', color: 'red', icon: AlertTriangle },
+  evacuation_report: { label: 'Emergency Evacuation', color: 'primary', icon: AlertTriangle },
 };
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
@@ -42,7 +46,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
   const [resolveComment, setResolveComment] = useState('');
   const [rating, setRating] = useState<number>(0);
   const [isResolving, setIsResolving] = useState(false);
-  
+
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -54,14 +58,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
         .eq('reported_user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching reports:', error);
-        return;
-      }
-
-      setReports(data || []);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
+      if (!error) setReports(data || []);
     } finally {
       setLoading(false);
     }
@@ -70,24 +67,18 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
   useEffect(() => {
     fetchReports();
 
-    // Set up real-time subscription for new reports
     const channel = supabase
       .channel('reports-changes')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'reports',
-          filter: `reported_user_id=eq.${userId}`
-        },
+        { event: 'INSERT', schema: 'public', table: 'reports', filter: `reported_user_id=eq.${userId}` },
         () => {
           fetchReports();
           toast({
             title: t('notifications.newReport'),
             description: t('notifications.newReportDesc'),
           });
-        }
+        },
       )
       .subscribe();
 
@@ -101,56 +92,38 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
       toast({
         title: t('notifications.ratingRequired'),
         description: t('notifications.ratingRequiredDesc'),
-        variant: "destructive"
+        variant: 'destructive',
       });
       return;
     }
 
     setIsResolving(true);
-
     try {
       const { error } = await supabase
         .from('reports')
         .update({
           is_resolved: true,
-          rating: rating,
-          comment: resolveComment.trim() || null
+          rating,
+          comment: resolveComment.trim() || null,
         })
         .eq('id', selectedReport.id);
 
-      if (error) {
-        console.error('Error resolving report:', error);
+      if (!error) {
         toast({
-          title: t('common.error'),
-          description: t('notifications.resolveError'),
-          variant: "destructive"
+          title: t('notifications.reportResolvedTitle'),
+          description: t('notifications.reportResolvedDesc'),
         });
-        return;
+        setSelectedReport(null);
+        setResolveComment('');
+        setRating(0);
+        fetchReports();
       }
-
-      toast({
-        title: t('notifications.reportResolvedTitle'),
-        description: t('notifications.reportResolvedDesc'),
-      });
-
-      setSelectedReport(null);
-      setResolveComment('');
-      setRating(0);
-      fetchReports();
-
-    } catch (error) {
-      console.error('Error resolving report:', error);
-      toast({
-        title: t('common.error'),
-        description: t('common.unexpectedError'),
-        variant: "destructive"
-      });
     } finally {
       setIsResolving(false);
     }
   };
 
-  const unreadReports = reports.filter(report => !report.is_resolved);
+  const unreadReports = reports.filter((r) => !r.is_resolved);
 
   if (loading) {
     return (
@@ -161,135 +134,150 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            {t('notifications.title')}
-            {unreadReports.length > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {unreadReports.length}
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reports.length === 0 ? (
-            <div className="text-center py-8">
-              <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{t('notifications.noReports')}</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reports.map((report) => {
-                const reportInfo = reportTypeLabels[report.report_type] || { 
-                  label: report.report_type, 
-                  color: 'secondary' 
-                };
+    <div className="mt-8"> {/* adds space below Dashboard */}
+      <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+        <Bell className="h-5 w-5" />
+        {t('notifications.title')}
+        {unreadReports.length > 0 && (
+          <Badge variant="destructive">{unreadReports.length}</Badge>
+        )}
+      </h2>
 
-                return (
-                  <Card 
-                    key={report.id} 
-                    className={`cursor-pointer transition-colors ${!report.is_resolved ? 'border-primary' : ''}`}
-                    onClick={() => setSelectedReport(report)}
+      {reports.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg">
+          <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">{t('notifications.noReports')}</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {reports.map((report) => {
+            const info =
+              reportTypeLabels[report.report_type] || {
+                label: report.report_type,
+                color: 'gray',
+                icon: Bell,
+              };
+            const Icon = info.icon;
+            return (
+              <div
+                key={report.id}
+                className={cn(
+                  'interactive-card p-5 rounded-xl border cursor-pointer transition-all',
+                  'hover:scale-[1.01] hover:shadow-md',
+                )}
+                onClick={() => setSelectedReport(report)}
+              >
+                <div className="flex items-center gap-4">
+                  {/* icon bubble */}
+                  <div
+                    className={cn(
+                      'w-12 h-12 flex items-center justify-center rounded-full',
+                      `bg-${info.color}-100`,
+                    )}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={reportInfo.color as any}>
-                              {reportInfo.label}
-                            </Badge>
-                            {report.is_resolved ? (
-                              <Badge variant="outline">
-                                <Check className="h-3 w-3 mr-1" />
-                                {t('notifications.resolved')}
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {t('notifications.pending')}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium">
-                            {t('notifications.vehicle')}: {report.reported_plate_number}
-                          </p>
-                          {report.comment && (
-                            <p className="text-sm text-muted-foreground">
-                              {report.comment}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(report.created_at).toLocaleDateString()} at{' '}
-                            {new Date(report.created_at).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        {!report.is_resolved && (
-                          <AlertTriangle className="h-5 w-5 text-destructive" />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
 
-      {/* Report Detail Modal */}
+                  {/* content */}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">
+                      {info.label} – {report.reported_plate_number}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                      {report.comment || t('notifications.noComment')}
+                    </p>
+                  </div>
+
+                  {/* status + date */}
+                  <div className="text-right space-y-1">
+                    <Badge
+                      variant={report.is_resolved ? 'outline' : 'destructive'}
+                    >
+                      {report.is_resolved
+                        ? t('notifications.resolved')
+                        : t('notifications.pending')}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           {selectedReport && (
             <>
               <DialogHeader>
                 <DialogTitle>{t('notifications.reportDetails')}</DialogTitle>
               </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={reportTypeLabels[selectedReport.report_type]?.color as any}>
-                      {reportTypeLabels[selectedReport.report_type]?.label || selectedReport.report_type}
-                    </Badge>
-                    {selectedReport.is_resolved && (
-                      <Badge variant="outline">
-                        <Check className="h-3 w-3 mr-1" />
-                        {t('notifications.resolved')}
-                      </Badge>
-                    )}
-                  </div>
-                  <p><strong>{t('notifications.vehicle')}:</strong> {selectedReport.reported_plate_number}</p>
-                  <p><strong>{t('notifications.date')}:</strong> {new Date(selectedReport.created_at).toLocaleDateString()} at {new Date(selectedReport.created_at).toLocaleTimeString()}</p>
-                </div>
 
-                {selectedReport.comment && (
-                  <div>
-                    <p className="font-medium mb-1">{t('report.additionalDetails')}:</p>
-                    <p className="text-muted-foreground bg-muted p-3 rounded-md">
-                      {selectedReport.comment}
-                    </p>
-                  </div>
-                )}
+              <Tabs defaultValue="details" className="mt-2">
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="details">{t('notifications.details')}</TabsTrigger>
+                  {!selectedReport.is_resolved && (
+                    <TabsTrigger value="actions">{t('notifications.actions')}</TabsTrigger>
+                  )}
+                </TabsList>
 
-                {selectedReport.image_url && (
-                  <div>
-                    <p className="font-medium mb-2">{t('notifications.evidencePhoto')}:</p>
-                    <img 
-                      src={selectedReport.image_url} 
-                      alt="Report evidence"
-                      className="w-full h-48 object-cover rounded-md border"
+                {/* details */}
+                <TabsContent value="details" className="space-y-4">
+                  <p>
+                    <strong>{t('notifications.vehicle')}:</strong>{' '}
+                    {selectedReport.reported_plate_number}
+                  </p>
+                  <p>
+                    <strong>{t('notifications.date')}:</strong>{' '}
+                    {new Date(selectedReport.created_at).toLocaleString()}
+                  </p>
+                  {selectedReport.comment && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="text-muted-foreground">{selectedReport.comment}</p>
+                    </div>
+                  )}
+                  {selectedReport.image_url && (
+                    <img
+                      src={selectedReport.image_url}
+                      alt="Evidence"
+                      className="w-full h-56 object-cover rounded-md border"
                     />
-                  </div>
-                )}
+                  )}
+                  {selectedReport.is_resolved && (
+                    <div className="bg-muted p-4 rounded-md">
+                      <p className="text-sm text-muted-foreground">
+                        {t('notifications.reportResolved')}{' '}
+                        {new Date(selectedReport.updated_at).toLocaleDateString()}
+                      </p>
+                      {selectedReport.rating && (
+                        <div className="flex items-center gap-1 mt-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={cn(
+                                'h-4 w-4',
+                                star <= selectedReport.rating
+                                  ? 'fill-accent text-accent'
+                                  : 'text-muted-foreground',
+                              )}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
 
+                {/* actions */}
                 {!selectedReport.is_resolved && (
-                  <>
-                    <div className="space-y-2">
+                  <TabsContent value="actions" className="space-y-4">
+                    <div>
                       <p className="font-medium">{t('notifications.rateReport')}:</p>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 mt-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Button
                             key={star}
@@ -298,24 +286,24 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
                             onClick={() => setRating(star)}
                             className="p-1"
                           >
-                            <Star 
-                              className={`h-6 w-6 ${star <= rating ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
+                            <Star
+                              className={cn(
+                                'h-6 w-6',
+                                star <= rating
+                                  ? 'fill-accent text-accent'
+                                  : 'text-muted-foreground',
+                              )}
                             />
                           </Button>
                         ))}
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <p className="font-medium">{t('notifications.yourResponse')}:</p>
-                      <Textarea
-                        placeholder={t('notifications.responsePlaceholder')}
-                        value={resolveComment}
-                        onChange={(e) => setResolveComment(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-
+                    <Textarea
+                      placeholder={t('notifications.responsePlaceholder')}
+                      value={resolveComment}
+                      onChange={(e) => setResolveComment(e.target.value)}
+                      rows={3}
+                    />
                     <div className="flex gap-3">
                       <Button
                         variant="outline"
@@ -340,33 +328,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
                         )}
                       </Button>
                     </div>
-                  </>
+                  </TabsContent>
                 )}
-
-                {selectedReport.is_resolved && (
-                  <div className="bg-muted p-4 rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      {t('notifications.reportResolved')} {new Date(selectedReport.updated_at).toLocaleDateString()}
-                    </p>
-                    {selectedReport.rating && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className="text-sm">{t('notifications.rating')}: </span>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star}
-                            className={`h-4 w-4 ${star <= selectedReport.rating! ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              </Tabs>
             </>
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

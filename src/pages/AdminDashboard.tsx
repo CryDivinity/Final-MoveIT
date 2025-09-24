@@ -104,14 +104,24 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground">DAP Administration Dashboard</p>
               </div>
             </div>
-            <Button 
-              onClick={handleLogout}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <Users className="w-4 h-4" />
+                <span>User Dashboard</span>
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

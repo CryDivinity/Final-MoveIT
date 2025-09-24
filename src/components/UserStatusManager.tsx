@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ChevronDown, Circle } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
+import { Button } from '@/components/ui/button';
 
 interface UserStatusManagerProps {
   user: User;
@@ -32,11 +32,9 @@ const UserStatusManager = ({ user, profile }: UserStatusManagerProps) => {
   // Set up activity listeners
   useEffect(() => {
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
     events.forEach(event => {
       document.addEventListener(event, updateActivity, true);
     });
-
     return () => {
       events.forEach(event => {
         document.removeEventListener(event, updateActivity, true);
@@ -49,19 +47,14 @@ const UserStatusManager = ({ user, profile }: UserStatusManagerProps) => {
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
     }
-
     const timer = setTimeout(() => {
       if (userStatus === 'online') {
         setUserStatus('inactive');
       }
     }, 2 * 60 * 1000); // 2 minutes
-
     setInactivityTimer(timer);
-
     return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, [lastActivity, userStatus]);
 
@@ -100,35 +93,18 @@ const UserStatusManager = ({ user, profile }: UserStatusManagerProps) => {
             {profile?.first_name?.[0] || user.email?.[0]?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        {/* Status Indicator */}
-        <div className={`absolute -bottom-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-background border-2 border-background flex items-center justify-center`}>
-          <Circle className={`h-2 w-2 sm:h-2.5 sm:w-2.5 fill-current ${getStatusColor(userStatus)}`} />
-        </div>
-      </div>
 
-      {/* User Info */}
-      <div className="flex-1 min-w-0">
-        <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">
-          {profile?.first_name && profile?.last_name 
-            ? `${profile.first_name} ${profile.last_name}`
-            : user.email?.split('@')[0]
-          }
-        </h3>
-        <p className="text-xs text-muted-foreground hidden sm:block">{user.email}</p>
-      </div>
-
-      {/* Status Dropdown - Hidden on small screens */}
-      <div className="hidden sm:block">
+        {/* Status Indicator with Dropdown */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-auto p-2 gap-1">
-              <div className="flex items-center gap-2">
-                <Circle className={`h-3 w-3 fill-current ${getStatusColor(userStatus)}`} />
-                <span className="text-xs">{getStatusText(userStatus)}</span>
-                <ChevronDown className="h-3 w-3" />
-              </div>
-            </Button>
+            <button
+              className="absolute -bottom-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-background border-2 border-background flex items-center justify-center cursor-pointer"
+              title={`Current: ${getStatusText(userStatus)}`}
+            >
+              <Circle className={`h-2 w-2 sm:h-2.5 sm:w-2.5 fill-current ${getStatusColor(userStatus)}`} />
+            </button>
           </PopoverTrigger>
+
           <PopoverContent className="w-40 p-2" align="end">
             <div className="space-y-1">
               {(['online', 'offline', 'inactive'] as UserStatus[]).map((status) => (
@@ -146,6 +122,18 @@ const UserStatusManager = ({ user, profile }: UserStatusManagerProps) => {
             </div>
           </PopoverContent>
         </Popover>
+      </div>
+
+      {/* User Info */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">
+          {profile?.first_name && profile?.last_name 
+            ? `${profile.first_name} ${profile.last_name}`
+            : user.email?.split('@')[0]
+          }
+        </h3>
+        <p className="text-xs text-muted-foreground hidden sm:block">{user.email}</p>
+        <p className="text-xs text-muted-foreground sm:block">{getStatusText(userStatus)}</p>
       </div>
     </div>
   );

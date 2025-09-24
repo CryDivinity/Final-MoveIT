@@ -150,14 +150,14 @@ const CarEditModal = ({ open, onOpenChange, car, onCarUpdated }: CarEditModalPro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Car className="h-5 w-5" />
-            {t('car.editTitle')}
+            Car Title
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Car Image */}
           <div className="space-y-3">
-            <Label>{t('car.image')}</Label>
+            <Label>Car Image</Label>
             <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
               {car?.image_url ? (
                 <img src={car.image_url} alt={car.name} className="w-full h-full object-cover" />

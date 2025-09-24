@@ -237,7 +237,7 @@ const QRCodeModal = ({ open, onOpenChange, user }: QRCodeModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5" />
-            {t('qr.title')}
+           Titlu
           </DialogTitle>
         </DialogHeader>
 
@@ -252,7 +252,7 @@ const QRCodeModal = ({ open, onOpenChange, user }: QRCodeModalProps) => {
                 {/* Profile Data Selection */}
                 <Card>
                   <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-4">{t('qr.profileInfo')}</h3>
+                    <h3 className="font-semibold mb-4"> Profile Info</h3>
                     <div className="space-y-3">
                       {userData.profile?.first_name && (
                         <div className="flex items-center space-x-2">
@@ -262,7 +262,7 @@ const QRCodeModal = ({ open, onOpenChange, user }: QRCodeModalProps) => {
                             onCheckedChange={(checked) => handleDataToggle('firstName', !!checked)}
                           />
                           <label htmlFor="firstName" className="text-sm">
-                            {t('qr.firstName')}: {userData.profile.first_name}
+                            First Name: {userData.profile.first_name}
                           </label>
                         </div>
                       )}

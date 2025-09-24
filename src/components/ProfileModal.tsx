@@ -540,10 +540,6 @@ const ProfileModal = ({ open, onOpenChange, user, setShowQRCodeModal }: ProfileM
                     <FileText className="h-5 w-5" />
                     {t('profile.myServices')}
                   </CardTitle>
-                  <Button onClick={() => setShowAddService(true)} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('profile.addService')}
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   {services.length === 0 ? (
