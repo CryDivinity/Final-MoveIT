@@ -144,6 +144,10 @@ const Dashboard = () => {
                   {t('nav.admin')}
                 </Button>
               )}
+              <Button variant="ghost" onClick={() => navigate('/')} className="glass-button text-sm">
+                <Home className="h-4 w-4 mr-2" />
+                {t('nav.home')}
+              </Button>
               <div className="hidden lg:block">
                 <Button variant="ghost" onClick={() => setShowProfileModal(true)} className="glass-button text-sm">
                   <UserIcon className="h-4 w-4 mr-2" />
@@ -236,10 +240,7 @@ const Dashboard = () => {
 
         {/* Mobile Nav */}
         <div className="lg:hidden mt-8 grid grid-cols-2 gap-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="glass-button justify-start h-auto py-4">
-            <Home className="h-5 w-5 mr-3" />
-            {t('nav.home')}
-          </Button>
+         
           <Button variant="ghost" onClick={() => setShowProfileModal(true)} className="glass-button justify-start h-auto py-4">
             <UserIcon className="h-5 w-5 mr-3" />
             {t('mobile.myProfile')}
@@ -248,12 +249,7 @@ const Dashboard = () => {
             <AlertTriangle className="h-5 w-5 mr-3" />
             {t('mobile.quickReport')}
           </Button>
-          {isAdmin && (
-            <Button variant="ghost" onClick={() => navigate('/admin')} className="glass-button justify-start h-auto py-4">
-              <Shield className="h-5 w-5 mr-3" />
-              {t('nav.admin')}
-            </Button>
-          )}
+         
         </div>
 
         {/* Notifications */}
