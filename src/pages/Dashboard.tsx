@@ -249,6 +249,10 @@ const Dashboard = () => {
             <AlertTriangle className="h-5 w-5 mr-3" />
             {t('mobile.quickReport')}
           </Button>
+          <Button variant="ghost" onClick={handleSignOut} className="glass-button text-sm">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {t('mobile.signOut')}
+                </Button>
          
         </div>
 

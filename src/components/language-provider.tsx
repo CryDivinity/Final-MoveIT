@@ -32,7 +32,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.searchUsers': 'Search users',
     'community.requests': 'Requests',
     'community.blocked': 'Blocked',
-
+    'mobile.signOut': 'Sign Out',
 
     // Navigation
     'nav.welcome': 'Welcome',
@@ -464,6 +464,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.searchUsers': 'Caută utilizatori după nume sau detalii ale vehiculului',
     'community.requests': 'Cereri',
     'community.blocked': 'Blocat',
+    'mobile.signOut': 'Deconectare',
 
     // Navigation
     'nav.welcome': 'Bun venit',
@@ -892,6 +893,7 @@ const translations: Record<Language, Record<string, string>> = {
   ru: {
  //bug fix
     'community.message': 'Сообщение',
+    'mobile.signOut': 'Выйти',
 
     // Navigation
     'nav.welcome': 'Добро пожаловать',
